@@ -21,8 +21,8 @@ class WordClockUsermod : public Usermod
     int lastTimeMinutes = -1;
 
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
-    bool usermodActive = false;
-    int ledOffset = 0;
+    bool usermodActive = true;
+    int ledOffset      = 0;
 
     bool configItIs      = true;
     bool configMidnight  = true;
@@ -183,10 +183,10 @@ class WordClockUsermod : public Usermod
       int minutesDotCount = minutes % 5;
 
       // activate all minute dots until number is reached
-      for (int i = 0; i < minutesDotCount; i++)
+      for (auto dot = 0; dot < minutesDotCount; dot++)
       {
         // activate LED
-        enabledDots[i] = true;
+        enabledDots[dot] = true;
       }
     }
 
@@ -200,13 +200,14 @@ class WordClockUsermod : public Usermod
       minutes %= 60;
 
       // disable complete matrix at the bigging
-      for (int x = 0; x < NUM_WORDS; x++)
+      for (auto word = 0; word < NUM_WORDS; word++)
       {
-        enabledWords[x] = false;
+        enabledWords[word] = false;
       }
-      for (int x = 0; x < maskSizeMinuteDots; x++)
+
+      for (auto dot = 0; dot < maskSizeMinuteDots; dot++)
       {
-        enabledDots[x] = false;
+        enabledDots[dot] = false;
       }
 
       // display it is/es ist if activated
@@ -219,7 +220,6 @@ class WordClockUsermod : public Usermod
       // set single minute dots
       setSingleMinuteDots(minutes);
 
-
       if (configMidnight && (hour24 == 0) && (minutes < 5))
       {
         enabledWords[WORD_MITTERNACHT] = true;
@@ -231,6 +231,7 @@ class WordClockUsermod : public Usermod
 
         if (minutes < 5)
         {
+          // nothing to do
         }
         else if (minutes < 10)
         {
@@ -413,7 +414,7 @@ class WordClockUsermod : public Usermod
           {
             if (enabledWords[word])
             {
-              for (auto led = wordRanges[word].first; word <= wordRanges[word].last; led++)
+              for (auto led = wordRanges[word].first; led <= wordRanges[word].last; led++)
               {
                 maskLedsOn[led] = true;
               }
@@ -546,7 +547,7 @@ class WordClockUsermod : public Usermod
 
       bool configComplete = !top.isNull();
 
-      configComplete &= getJsonValue(top[F("active")], usermodActive);
+      //configComplete &= getJsonValue(top[F("active")], usermodActive);
       configComplete &= getJsonValue(top[F("ledOffset")], ledOffset);
       configComplete &= getJsonValue(top[F("itIs")], configItIs);
       configComplete &= getJsonValue(top[F("midnight")], configMidnight);
