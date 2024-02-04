@@ -5,16 +5,16 @@
 /*
  * Usermods allow you to add own functionality to WLED more easily
  * See: https://github.com/Aircoookie/WLED/wiki/Add-own-functionality
- * 
- * This usermod can be used to drive a wordclock with a 11x10 pixel matrix with WLED. There are also 4 additional dots for the minutes. 
+ *
+ * This usermod can be used to drive a wordclock with a 11x10 pixel matrix with WLED. There are also 4 additional dots for the minutes.
  * The visualisation is described in 4 mask with LED numbers (single dots for minutes, minutes, hours and "clock/Uhr").
  * There are 2 parameters to change the behaviour:
- * 
+ *
  * active: enable/disable usermod
  * diplayItIs: enable/disable display of "Es ist" on the clock.
  */
 
-class WordClockUsermod : public Usermod 
+class WordClockUsermod : public Usermod
 {
   private:
     unsigned long lastTime = 0;
@@ -22,105 +22,103 @@ class WordClockUsermod : public Usermod
 
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
     bool usermodActive = false;
-    bool displayItIs = false;
-    int ledOffset = 100;
-    bool meander = false;
-    bool nord = false;
-    
+    int ledOffset = 0;
+
+    bool configItIs      = true;
+    bool configMidnight  = true;
+    bool configNull      = true;
+    bool configQuarterTo = true;
+    bool configTwentyTo  = true;
+    bool configTestMode  = false;
+
     // defines for mask sizes
-    #define maskSizeLeds        114
-    #define maskSizeMinutes     12
-    #define maskSizeMinutesMea  12
-    #define maskSizeHours       6
-    #define maskSizeHoursMea    6
-    #define maskSizeItIs        5
+    #define maskSizeLeds        125
     #define maskSizeMinuteDots  4
 
-    // "minute" masks
-    // Normal wiring
-    const int maskMinutes[14][maskSizeMinutes] = 
-    {
-      {107, 108, 109,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1}, // 0 - 00
-      {  7,   8,   9,  10,  40,  41,  42,  43,  -1,  -1,  -1,  -1}, // 1 - 05 fünf nach
-      { 11,  12,  13,  14,  40,  41,  42,  43,  -1,  -1,  -1,  -1}, // 2 - 10 zehn nach
-      { 26,  27,  28,  29,  30,  31,  32,  -1,  -1,  -1,  -1,  -1}, // 3 - 15 viertel
-      { 15,  16,  17,  18,  19,  20,  21,  40,  41,  42,  43,  -1}, // 4 - 20 zwanzig nach
-      {  7,   8,   9,  10,  33,  34,  35,  44,  45,  46,  47,  -1}, // 5 - 25 fünf vor halb
-      { 44,  45,  46,  47,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1}, // 6 - 30 halb
-      {  7,   8,   9,  10,  40,  41,  42,  43,  44,  45,  46,  47}, // 7 - 35 fünf nach halb
-      { 15,  16,  17,  18,  19,  20,  21,  33,  34,  35,  -1,  -1}, // 8 - 40 zwanzig vor
-      { 22,  23,  24,  25,  26,  27,  28,  29,  30,  31,  32,  -1}, // 9 - 45 dreiviertel
-      { 11,  12,  13,  14,  33,  34,  35,  -1,  -1,  -1,  -1,  -1}, // 10 - 50 zehn vor
-      {  7,   8,   9,  10,  33,  34,  35,  -1,  -1,  -1,  -1,  -1}, // 11 - 55 fünf vor
-      { 26,  27,  28,  29,  30,  31,  32,  40,  41,  42,  43,  -1}, // 12 - 15 alternative viertel nach
-      { 26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  -1,  -1}  // 13 - 45 alternative viertel vor
+    struct ledRange {
+      uint16_t first;
+      uint16_t last;
     };
 
-    // Meander wiring
-    const int maskMinutesMea[14][maskSizeMinutesMea] = 
-    {
-      { 99, 100, 101,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1}, // 0 - 00
-      {  7,   8,   9,  10,  33,  34,  35,  36,  -1,  -1,  -1,  -1}, // 1 - 05 fünf nach
-      { 18,  19,  20,  21,  33,  34,  35,  36,  -1,  -1,  -1,  -1}, // 2 - 10 zehn nach
-      { 26,  27,  28,  29,  30,  31,  32,  -1,  -1,  -1,  -1,  -1}, // 3 - 15 viertel
-      { 11,  12,  13,  14,  15,  16,  17,  33,  34,  35,  36,  -1}, // 4 - 20 zwanzig nach
-      {  7,   8,   9,  10,  41,  42,  43,  44,  45,  46,  47,  -1}, // 5 - 25 fünf vor halb
-      { 44,  45,  46,  47,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1}, // 6 - 30 halb
-      {  7,   8,   9,  10,  33,  34,  35,  36,  44,  45,  46,  47}, // 7 - 35 fünf nach halb
-      { 11,  12,  13,  14,  15,  16,  17,  41,  42,  43,  -1,  -1}, // 8 - 40 zwanzig vor
-      { 22,  23,  24,  25,  26,  27,  28,  29,  30,  31,  32,  -1}, // 9 - 45 dreiviertel
-      { 18,  19,  20,  21,  41,  42,  43,  -1,  -1,  -1,  -1,  -1}, // 10 - 50 zehn vor
-      {  7,   8,   9,  10,  41,  42,  43,  -1,  -1,  -1,  -1,  -1}, // 11 - 55 fünf vor
-      { 26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  -1}, // 12 - 15 alternative viertel nach
-      { 26,  27,  28,  29,  30,  31,  32,  41,  42,  43,  -1,  -1}  // 13 - 45 alternative viertel vor
+    enum words {
+      WORD_ES = 0U,
+      WORD_IST,
+      WORD_NULL,
+      WORD_UHR_1ST,
+      WORD_ZWANZIG,
+      WORD_FUENF_1ST,
+      WORD_ZEHN_1ST,
+      WORD_FUENFZEHN,
+      WORD_DREI_1ST,
+      WORD_VIERTEL,
+      WORD_DREIVIERTEL,
+      WORD_VOR,
+      WORD_NACH,
+      WORD_UM,
+      WORD_HALB,
+      WORD_ZWEI,
+      WORD_EIN,
+      WORD_EINS,
+      WORD_MITTERNACHT,
+      WORD_ACHT,
+  	  WORD_DREI_2ND,
+      WORD_SECHS,
+      WORD_VIER,
+      WORD_SIEBEN,
+      WORD_ELF,
+      WORD_FUENF_2ND,
+      WORD_ZWOELF,
+      WORD_ZEHN_2ND,
+      WORD_NEUN,
+      WORD_UHR_2ND,
+      NUM_WORDS
     };
 
-
-    // hour masks
-    // Normal wiring
-    const int maskHours[13][maskSizeHours] = 
+    // word ranges
+    const ledRange wordRanges[NUM_WORDS]
     {
-      { 55,  56,  57,  -1,  -1,  -1}, // 01: ein
-      { 55,  56,  57,  58,  -1,  -1}, // 01: eins
-      { 62,  63,  64,  65,  -1,  -1}, // 02: zwei
-      { 66,  67,  68,  69,  -1,  -1}, // 03: drei
-      { 73,  74,  75,  76,  -1,  -1}, // 04: vier
-      { 51,  52,  53,  54,  -1,  -1}, // 05: fünf
-      { 77,  78,  79,  80,  81,  -1}, // 06: sechs
-      { 88,  89,  90,  91,  92,  93}, // 07: sieben
-      { 84,  85,  86,  87,  -1,  -1}, // 08: acht
-      {102, 103, 104, 105,  -1,  -1}, // 09: neun
-      { 99, 100, 101, 102,  -1,  -1}, // 10: zehn
-      { 49,  50,  51,  -1,  -1,  -1}, // 11: elf
-      { 94,  95,  96,  97,  98,  -1}  // 12: zwölf and 00: null
-    };
-    // Meander wiring
-    const int maskHoursMea[13][maskSizeHoursMea] = 
-    {
-      { 63,  64,  65,  -1,  -1,  -1}, // 01: ein
-      { 62,  63,  64,  65,  -1,  -1}, // 01: eins
-      { 55,  56,  57,  58,  -1,  -1}, // 02: zwei
-      { 66,  67,  68,  69,  -1,  -1}, // 03: drei
-      { 73,  74,  75,  76,  -1,  -1}, // 04: vier
-      { 51,  52,  53,  54,  -1,  -1}, // 05: fünf
-      { 83,  84,  85,  86,  87,  -1}, // 06: sechs
-      { 88,  89,  90,  91,  92,  93}, // 07: sieben
-      { 77,  78,  79,  80,  -1,  -1}, // 08: acht
-      {103, 104, 105, 106,  -1,  -1}, // 09: neun
-      {106, 107, 108, 109,  -1,  -1}, // 10: zehn
-      { 49,  50,  51,  -1,  -1,  -1}, // 11: elf
-      { 94,  95,  96,  97,  98,  -1}  // 12: zwölf and 00: null
+      {113, 114}, // WORD_ES
+      {116, 118}, // WORD_IST
+      {120, 123}, // WORD_NULL
+      {109, 111}, // WORD_UHR_1ST
+      {101, 107}, // WORD_ZWANZIG
+      { 91,  94}, // WORD_FUENF_1ST
+      { 95,  98}, // WORD_ZEHN_1ST
+      { 91,  98}, // WORD_FUENFZEHN
+      { 86,  89}, // WORD_DREI_1ST
+      { 79,  85}, // WORD_VIERTEL
+      { 79,  89}, // WORD_DREIVIERTEL
+      { 69,  71}, // WORD_VOR
+      { 72,  75}, // WORD_NACH
+      { 77,  78}, // WORD_UM
+      { 64,  67}, // WORD_HALB
+      { 59,  62}, // WORD_ZWEI
+      { 58,  60}, // WORD_EIN
+      { 57,  60}, // WORD_EINS
+      { 46,  56}, // WORD_MITTERNACHT
+      { 53,  56}, // WORD_ACHT
+      { 41,  44}, // WORD_DREI_2ND
+      { 36,  40}, // WORD_SECHS
+      { 24,  27}, // WORD_VIER
+      { 28,  33}, // WORD_SIEBEN
+      { 21,  23}, // WORD_ELF
+      { 18,  21}, // WORD_FUENF_2ND
+      { 13,  17}, // WORD_ZWOELF
+      {  1,   4}, // WORD_ZEHN_2ND
+      {  4,   7}, // WORD_NEUN
+      {  9,  11}  // WORD_UHR_2ND
     };
 
-    // mask "it is"
-    const int maskItIs[maskSizeItIs] = {0, 1, 3, 4, 5};
-
-    // mask minute dots
-    const int maskMinuteDots[maskSizeMinuteDots] = {110, 111, 112, 113};
+    // minute dots
+    const int minuteDots[maskSizeMinuteDots] = {0, 112, 124, 12};
 
     // overall mask to define which LEDs are on
-    int maskLedsOn[maskSizeLeds] = 
+    bool enabledWords[NUM_WORDS]         = { 0 };
+    bool enabledDots[maskSizeMinuteDots] = { 0 };
+
+    bool maskLedsOn[maskSizeLeds] =
     {
+      0,0,0,0,0,0,0,0,0,0,0,
       0,0,0,0,0,0,0,0,0,0,0,
       0,0,0,0,0,0,0,0,0,0,0,
       0,0,0,0,0,0,0,0,0,0,0,
@@ -134,62 +132,47 @@ class WordClockUsermod : public Usermod
       0,0,0,0
     };
 
-    // update led mask
-    void updateLedMask(const int wordMask[], int arraySize)
-    {
-      // loop over array
-      for (int x=0; x < arraySize; x++) 
-      {
-        // check if mask has a valid LED number
-        if (wordMask[x] >= 0 && wordMask[x] < maskSizeLeds)
-        {
-          // turn LED on
-          maskLedsOn[wordMask[x]] = 1;
-        }
-      }
-    }
-
     // set hours
-    void setHours(int hours, bool fullClock)
+    void setHours(int hours)
     {
-      int index = hours;
-
-      // handle 00:xx as 12:xx
-      if (hours == 0)
+      switch(hours)
       {
-        index = 12;
-      }
-
-      // check if we get an overrun of 12 o´clock
-      if (hours == 13)
-      {
-        index = 1;
-      }
-
-      // special handling for "ein Uhr" instead of "eins Uhr"
-      if (hours == 1 && fullClock == true)
-      {
-        index = 0;
-      }
-
-      // update led mask
-      if (meander)
-      {
-        updateLedMask(maskHoursMea[index], maskSizeHoursMea);
-      } else {
-      updateLedMask(maskHours[index], maskSizeHours);
-      }
-    }
-
-    // set minutes
-    void setMinutes(int index)
-    {
-      // update led mask
-      if (meander)
-      {
-        updateLedMask(maskMinutesMea[index], maskSizeMinutesMea);
-      } else {
-      updateLedMask(maskMinutes[index], maskSizeMinutes);
+        case 0:
+          enabledWords[WORD_ZWOELF] = true;
+          break;
+        case 1:
+          enabledWords[WORD_EINS] = true;
+          break;
+        case 2:
+          enabledWords[WORD_ZWEI] = true;
+          break;
+        case 3:
+          enabledWords[WORD_DREI_2ND] = true;
+          break;
+        case 4:
+          enabledWords[WORD_VIER] = true;
+          break;
+        case 5:
+          enabledWords[WORD_FUENF_2ND] = true;
+          break;
+        case 6:
+          enabledWords[WORD_SECHS] = true;
+          break;
+        case 7:
+          enabledWords[WORD_SIEBEN] = true;
+          break;
+        case 8:
+          enabledWords[WORD_ACHT] = true;
+          break;
+        case 9:
+          enabledWords[WORD_NEUN] = true;
+          break;
+        case 10:
+          enabledWords[WORD_ZEHN_2ND] = true;
+          break;
+        case 11:
+          enabledWords[WORD_ELF] = true;
+          break;
       }
     }
 
@@ -199,113 +182,188 @@ class WordClockUsermod : public Usermod
       // modulo to get minute dots
       int minutesDotCount = minutes % 5;
 
-      // check if minute dots are active
-      if (minutesDotCount > 0)
+      // activate all minute dots until number is reached
+      for (int i = 0; i < minutesDotCount; i++)
       {
-        // activate all minute dots until number is reached
-        for (int i = 0; i < minutesDotCount; i++)
-        {
-          // activate LED
-          maskLedsOn[maskMinuteDots[i]] = 1;  
-        }
+        // activate LED
+        enabledDots[i] = true;
       }
     }
 
     // update the display
-    void updateDisplay(uint8_t hours, uint8_t minutes) 
+    void updateDisplay(uint8_t hours, uint8_t minutes)
     {
+      const uint8_t hour     = hours % 12;
+      const uint8_t hour24   = hours % 24;
+      const uint8_t hourNext = (hours + 1) % 12;
+
+      minutes %= 60;
+
       // disable complete matrix at the bigging
-      for (int x = 0; x < maskSizeLeds; x++)
+      for (int x = 0; x < NUM_WORDS; x++)
       {
-        maskLedsOn[x] = 0;
-      } 
-      
+        enabledWords[x] = false;
+      }
+      for (int x = 0; x < maskSizeMinuteDots; x++)
+      {
+        enabledDots[x] = false;
+      }
+
       // display it is/es ist if activated
-      if (displayItIs)
+      if (configItIs)
       {
-        updateLedMask(maskItIs, maskSizeItIs);
+        enabledWords[WORD_ES] = true;
+        enabledWords[WORD_IST] = true;
       }
 
       // set single minute dots
       setSingleMinuteDots(minutes);
 
-      // switch minutes
-      switch (minutes / 5) 
+
+      if (configMidnight && (hour24 == 0) && (minutes < 5))
       {
-        case 0:
-            // full hour
-            setMinutes(0);
-            setHours(hours, true);
-            break;
-        case 1:
-            // 5 nach
-            setMinutes(1);
-            setHours(hours, false);
-            break;
-        case 2:
-            // 10 nach
-            setMinutes(2);
-            setHours(hours, false);
-            break;
-        case 3:
-            if (nord) {
-              // viertel nach
-              setMinutes(12);
-              setHours(hours, false);
-            } else {
-              // viertel 
-              setMinutes(3);
-              setHours(hours + 1, false);
-            };
-            break;
-        case 4:
-            // 20 nach
-            setMinutes(4);
-            setHours(hours, false);
-            break;
-        case 5:
-            // 5 vor halb
-            setMinutes(5);
-            setHours(hours + 1, false);
-            break;
-        case 6:
-            // halb
-            setMinutes(6);
-            setHours(hours + 1, false);
-            break;
-        case 7:
-            // 5 nach halb
-            setMinutes(7);
-            setHours(hours + 1, false);
-            break;
-        case 8:
-            // 20 vor
-            setMinutes(8);
-            setHours(hours + 1, false);
-            break;
-        case 9:
-            // viertel vor
-            if (nord) {
-              setMinutes(13);
-            } 
-            // dreiviertel
-              else {
-              setMinutes(9);
-            }
-            setHours(hours + 1, false);
-            break;
-        case 10:
-            // 10 vor
-            setMinutes(10);
-            setHours(hours + 1, false);
-            break;
-        case 11:
-            // 5 vor
-            setMinutes(11);
-            setHours(hours + 1, false);
-            break;
+        enabledWords[WORD_MITTERNACHT] = true;
+      }
+      else if (configNull && (hour == 0) && (minutes < 25))
+      {
+        enabledWords[WORD_NULL] = true;
+        enabledWords[WORD_UHR_1ST] = true;
+
+        if (minutes < 5)
+        {
         }
+        else if (minutes < 10)
+        {
+          enabledWords[WORD_FUENF_1ST] = true;
+        }
+        else if (minutes < 15)
+        {
+          enabledWords[WORD_ZEHN_1ST] = true;
+        }
+        else if (minutes < 20)
+        {
+          enabledWords[WORD_FUENFZEHN] = true;
+        }
+        else
+        {
+          enabledWords[WORD_ZWANZIG] = true;
+        }
+      }
+      else if (minutes < 5)
+      {
+        if (hour == 1)
+        {
+          enabledWords[WORD_EIN] = true;
+        }
+        else
+        {
+          setHours(hour);
+        }
+
+        enabledWords[WORD_UHR_2ND] = true;
+      }
+      else if (minutes < 10)
+      {
+        enabledWords[WORD_FUENF_1ST] = true;
+        enabledWords[WORD_NACH] = true;
+        setHours(hour);
+      }
+      else if (minutes < 15)
+      {
+        enabledWords[WORD_ZEHN_1ST] = true;
+        enabledWords[WORD_NACH] = true;
+        setHours(hour);
+      }
+      else if (minutes < 20)
+      {
+        enabledWords[WORD_VIERTEL] = true;
+        if (configQuarterTo)
+        {
+          enabledWords[WORD_NACH] = true;
+          setHours(hour);
+        }
+        else
+        {
+          setHours(hourNext);
+        }
+      }
+      else if (minutes < 25)
+      {
+        if (configTwentyTo)
+        {
+          enabledWords[WORD_ZWANZIG] = true;
+          enabledWords[WORD_NACH] = true;
+          setHours(hour);
+        }
+        else
+        {
+          enabledWords[WORD_ZEHN_1ST] = true;
+          enabledWords[WORD_VOR] = true;
+          enabledWords[WORD_HALB] = true;
+          setHours(hourNext);
+        }
+      }
+      else if (minutes < 30)
+      {
+        enabledWords[WORD_FUENF_1ST] = true;
+        enabledWords[WORD_VOR] = true;
+        enabledWords[WORD_HALB] = true;
+        setHours(hourNext);
+      }
+      else if (minutes < 35)
+      {
+        enabledWords[WORD_HALB] = true;
+        setHours(hourNext);
+      }
+      else if (minutes < 40)
+      {
+        enabledWords[WORD_FUENF_1ST] = true;
+        enabledWords[WORD_NACH] = true;
+        enabledWords[WORD_HALB] = true;
+        setHours(hourNext);
+      }
+      else if (minutes < 45)
+      {
+        if (configTwentyTo)
+        {
+          enabledWords[WORD_ZWANZIG] = true;
+          enabledWords[WORD_VOR] = true;
+        }
+        else
+        {
+          enabledWords[WORD_ZEHN_1ST] = true;
+          enabledWords[WORD_NACH] = true;
+          enabledWords[WORD_HALB] = true;
+        }
+        setHours(hourNext);
+      }
+      else if (minutes < 50)
+      {
+        if (configQuarterTo)
+        {
+          enabledWords[WORD_VIERTEL] = true;
+          enabledWords[WORD_VOR] = true;
+        }
+        else
+        {
+          enabledWords[WORD_DREIVIERTEL] = true;
+        }
+        setHours(hourNext);
+      }
+      else if (minutes < 55)
+      {
+        enabledWords[WORD_ZEHN_1ST] = true;
+        enabledWords[WORD_VOR] = true;
+        setHours(hourNext);
+      }
+      else if (minutes < 60)
+      {
+        enabledWords[WORD_FUENF_1ST] = true;
+        enabledWords[WORD_VOR] = true;
+        setHours(hourNext);
+      }
     }
+
 
   public:
     //Functions called by WLED
@@ -314,7 +372,7 @@ class WordClockUsermod : public Usermod
      * setup() is called once at boot. WiFi is not yet connected at this point.
      * You can use it to initialize variables, sensors or similar.
      */
-    void setup() 
+    void setup()
     {
     }
 
@@ -322,24 +380,23 @@ class WordClockUsermod : public Usermod
      * connected() is called every time the WiFi is (re)connected
      * Use it to initialize network interfaces
      */
-    void connected() 
+    void connected()
     {
     }
 
     /*
      * loop() is called continuously. Here you can check for events, read sensors, etc.
-     * 
+     *
      * Tips:
      * 1. You can use "if (WLED_CONNECTED)" to check for a successful network connection.
      *    Additionally, "if (WLED_MQTT_CONNECTED)" is available to check for a connection to an MQTT broker.
-     * 
+     *
      * 2. Try to avoid using the delay() function. NEVER use delays longer than 10 milliseconds.
      *    Instead, use a timer check as shown here.
      */
     void loop() {
-
       // do it every 5 seconds
-      if (millis() - lastTime > 5000) 
+      if ((millis() - lastTime) > 5000)
       {
         // check the time
         int minutes = minute(localTime);
@@ -348,7 +405,28 @@ class WordClockUsermod : public Usermod
         if (lastTimeMinutes != minutes)
         {
           // update the display with new time
-          updateDisplay(hourFormat12(localTime), minute(localTime));
+          updateDisplay(hour(localTime), minute(localTime));
+
+          memset(maskLedsOn, 0, sizeof(maskLedsOn));
+
+          for (auto word = 0; word < NUM_WORDS; word++)
+          {
+            if (enabledWords[word])
+            {
+              for (auto led = wordRanges[word].first; word <= wordRanges[word].last; led++)
+              {
+                maskLedsOn[led] = true;
+              }
+            }
+          }
+
+          for (auto dot = 0; dot < maskSizeMinuteDots; dot++)
+          {
+            if(enabledDots[dot])
+            {
+              maskLedsOn[minuteDots[dot]] = true;
+            }
+          }
 
           // remember last update time
           lastTimeMinutes = minutes;
@@ -390,11 +468,11 @@ class WordClockUsermod : public Usermod
      * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.
      * It will be called by WLED when settings are actually saved (for example, LED settings are saved)
      * If you want to force saving the current state, use serializeConfig() in your loop().
-     * 
+     *
      * CAUTION: serializeConfig() will initiate a filesystem write operation.
      * It might cause the LEDs to stutter and will cause flash wear if called too often.
      * Use it sparingly and always in the loop, never in network callbacks!
-     * 
+     *
      * addToConfig() will make your settings editable through the Usermod Settings page automatically.
      *
      * Usermod Settings Overview:
@@ -414,42 +492,49 @@ class WordClockUsermod : public Usermod
      *   - Tip: use int8_t to store the pin value in the Usermod, so a -1 value (pin not set) can be used
      *
      * See usermod_v2_auto_save.h for an example that saves Flash space by reusing ArduinoJson key name strings
-     * 
-     * If you need a dedicated settings page with custom layout for your Usermod, that takes a lot more work.  
+     *
+     * If you need a dedicated settings page with custom layout for your Usermod, that takes a lot more work.
      * You will have to add the setting to the HTML, xml.cpp and set.cpp manually.
      * See the WLED Soundreactive fork (code and wiki) for reference.  https://github.com/atuline/WLED
-     * 
+     *
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
     void addToConfig(JsonObject& root)
     {
       JsonObject top = root.createNestedObject(F("WordClockUsermod"));
       top[F("active")] = usermodActive;
-      top[F("displayItIs")] = displayItIs;
       top[F("ledOffset")] = ledOffset;
-      top[F("Meander wiring?")] = meander;
-      top[F("Norddeutsch")] = nord;
+      top[F("itIs")] = configItIs;
+      top[F("midnight")] = configMidnight;
+      top[F("null")] = configNull;
+      top[F("quarterTo")] = configQuarterTo;
+      top[F("twentyTo")] = configTwentyTo;
+      top[F("testMode")] = configTestMode;
     }
 
     void appendConfigData()
     {
       oappend(SET_F("addInfo('WordClockUsermod:ledOffset', 1, 'Number of LEDs before the letters');"));
-      oappend(SET_F("addInfo('WordClockUsermod:Norddeutsch', 1, 'Viertel vor instead of Dreiviertel');"));
+      oappend(SET_F("addInfo('WordClockUsermod:itIs', 1, '\"It is\" activated');"));
+      oappend(SET_F("addInfo('WordClockUsermod:midnight', 1, 'Midnight instead of 12');"));
+      oappend(SET_F("addInfo('WordClockUsermod:null', 1, 'Null instead of 12');"));
+      oappend(SET_F("addInfo('WordClockUsermod:quarterTo', 1, 'Quarter to instead of \"Dreiviertel\"');"));
+      oappend(SET_F("addInfo('WordClockUsermod:twentyTo', 1, '\"Twenty to\" instead of \"10 nach halb\"');"));
     }
 
     /*
      * readFromConfig() can be used to read back the custom settings you added with addToConfig().
      * This is called by WLED when settings are loaded (currently this only happens immediately after boot, or after saving on the Usermod Settings page)
-     * 
+     *
      * readFromConfig() is called BEFORE setup(). This means you can use your persistent values in setup() (e.g. pin assignments, buffer sizes),
      * but also that if you want to write persistent values to a dynamic buffer, you'd need to allocate it here instead of in setup.
      * If you don't know what that is, don't fret. It most likely doesn't affect your use case :)
-     * 
+     *
      * Return true in case the config values returned from Usermod Settings were complete, or false if you'd like WLED to save your defaults to disk (so any missing values are editable in Usermod Settings)
-     * 
+     *
      * getJsonValue() returns false if the value is missing, or copies the value into the variable provided and returns true if the value is present
      * The configComplete variable is true only if the "exampleUsermod" object and all values are present.  If any values are missing, WLED will know to call addToConfig() to save them
-     * 
+     *
      * This function is guaranteed to be called on boot, but could also be called every time settings are updated
      */
     bool readFromConfig(JsonObject& root)
@@ -462,10 +547,13 @@ class WordClockUsermod : public Usermod
       bool configComplete = !top.isNull();
 
       configComplete &= getJsonValue(top[F("active")], usermodActive);
-      configComplete &= getJsonValue(top[F("displayItIs")], displayItIs);
       configComplete &= getJsonValue(top[F("ledOffset")], ledOffset);
-      configComplete &= getJsonValue(top[F("Meander wiring?")], meander);
-      configComplete &= getJsonValue(top[F("Norddeutsch")], nord);
+      configComplete &= getJsonValue(top[F("itIs")], configItIs);
+      configComplete &= getJsonValue(top[F("midnight")], configMidnight);
+      configComplete &= getJsonValue(top[F("null")], configNull);
+      configComplete &= getJsonValue(top[F("quarterTo")], configQuarterTo);
+      configComplete &= getJsonValue(top[F("twentyTo")], configTwentyTo);
+      configComplete &= getJsonValue(top[F("testMode")], configTestMode);
 
       return configComplete;
     }
@@ -484,7 +572,7 @@ class WordClockUsermod : public Usermod
         for (int x = 0; x < maskSizeLeds; x++)
         {
           // check mask
-          if (maskLedsOn[x] == 0)
+          if (!maskLedsOn[x])
           {
             // set pixel off
             strip.setPixelColor(x + ledOffset, RGBW32(0,0,0,0));
