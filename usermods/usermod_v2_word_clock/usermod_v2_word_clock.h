@@ -32,7 +32,7 @@ class WordClockUsermod : public Usermod
     bool configTestMode  = false;
 
     // defines for mask sizes
-    #define maskSizeLeds        125
+    #define maskSizeLeds        (13 * 11)
     #define maskSizeMinuteDots  4
 
     struct ledRange {
@@ -50,6 +50,7 @@ class WordClockUsermod : public Usermod
       WORD_ZEHN_1ST,
       WORD_FUENFZEHN,
       WORD_DREI_1ST,
+      WORD_VIER_1ST,
       WORD_VIERTEL,
       WORD_DREIVIERTEL,
       WORD_VOR,
@@ -63,7 +64,7 @@ class WordClockUsermod : public Usermod
       WORD_ACHT,
   	  WORD_DREI_2ND,
       WORD_SECHS,
-      WORD_VIER,
+      WORD_VIER_2ND,
       WORD_SIEBEN,
       WORD_ELF,
       WORD_FUENF_2ND,
@@ -74,43 +75,56 @@ class WordClockUsermod : public Usermod
       NUM_WORDS
     };
 
-    // word ranges
+    // word ranges for a 13x11 2D grid
+    // 1st column only 1/2 and last column 3/4 minute dots not included
     const ledRange wordRanges[NUM_WORDS]
     {
-      {113, 114}, // WORD_ES
-      {116, 118}, // WORD_IST
-      {120, 123}, // WORD_NULL
-      {109, 111}, // WORD_UHR_1ST
-      {101, 107}, // WORD_ZWANZIG
-      { 91,  94}, // WORD_FUENF_1ST
-      { 95,  98}, // WORD_ZEHN_1ST
-      { 91,  98}, // WORD_FUENFZEHN
-      { 86,  89}, // WORD_DREI_1ST
-      { 79,  85}, // WORD_VIERTEL
-      { 79,  89}, // WORD_DREIVIERTEL
-      { 69,  71}, // WORD_VOR
-      { 72,  75}, // WORD_NACH
-      { 77,  78}, // WORD_UM
-      { 64,  67}, // WORD_HALB
-      { 59,  62}, // WORD_ZWEI
-      { 58,  60}, // WORD_EIN
-      { 57,  60}, // WORD_EINS
-      { 46,  56}, // WORD_MITTERNACHT
-      { 53,  56}, // WORD_ACHT
-      { 41,  44}, // WORD_DREI_2ND
-      { 36,  40}, // WORD_SECHS
-      { 24,  27}, // WORD_VIER
-      { 28,  33}, // WORD_SIEBEN
-      { 21,  23}, // WORD_ELF
-      { 18,  21}, // WORD_FUENF_2ND
-      { 13,  17}, // WORD_ZWOELF
-      {  1,   4}, // WORD_ZEHN_2ND
-      {  4,   7}, // WORD_NEUN
-      {  9,  11}  // WORD_UHR_2ND
+      // row 1 ->
+      {  1,   2}, // WORD_ES
+      {  4,   6}, // WORD_IST
+      {  8,  11}, // WORD_NULL
+      // row 2 <-
+      { 14,  16}, // WORD_UHR_1ST
+      { 18,  24}, // WORD_ZWANZIG
+      // row 3 ->
+      { 28,  31}, // WORD_FUENF_1ST
+      { 32,  35}, // WORD_ZEHN_1ST
+      { 28,  35}, // WORD_FUENFZEHN
+      // row 4 <-
+      { 40,  43}, // WORD_DREI_1ST
+      { 44,  47}, // WORD_VIER_1ST
+      { 44,  50}, // WORD_VIERTEL
+      { 40,  50}, // WORD_DREIVIERTEL
+      // row 5 ->
+      { 54,  56}, // WORD_VOR
+      { 57,  60}, // WORD_NACH
+      { 62,  63}, // WORD_UM
+      // row 6 <-
+      { 66,  69}, // WORD_HALB
+      { 71,  74}, // WORD_ZWEI
+      { 73,  75}, // WORD_EIN
+      { 73,  76}, // WORD_EINS
+      // row 7 ->
+      { 79,  89}, // WORD_MITTERNACHT
+      { 86,  89}, // WORD_ACHT
+      // row 8 <-
+      { 93,  96}, // WORD_DREI_2ND
+      { 97, 101}, // WORD_SECHS
+      // row 9 ->
+      {105, 108}, // WORD_VIER_2ND
+      {109, 114}, // WORD_SIEBEN
+      // row 10 ->
+      {118, 120}, // WORD_ELF
+      {120, 123}, // WORD_FUENF_2ND
+      {124, 128}, // WORD_ZWOELF
+      // row 11 ->
+      {131, 134}, // WORD_ZEHN_2ND
+      {134, 137}, // WORD_NEUN
+      {139, 141}  // WORD_UHR_2ND
     };
 
     // minute dots
-    const int minuteDots[maskSizeMinuteDots] = {0, 112, 124, 12};
+    const int minuteDots[maskSizeMinuteDots] = {130, 0, 12, 142};
 
     // overall mask to define which LEDs are on
     bool enabledWords[NUM_WORDS]         = { 0 };
@@ -118,18 +132,17 @@ class WordClockUsermod : public Usermod
 
     bool maskLedsOn[maskSizeLeds] =
     {
-      0,0,0,0,0,0,0,0,0,0,0,
-      0,0,0,0,0,0,0,0,0,0,0,
-      0,0,0,0,0,0,0,0,0,0,0,
-      0,0,0,0,0,0,0,0,0,0,0,
-      0,0,0,0,0,0,0,0,0,0,0,
-      0,0,0,0,0,0,0,0,0,0,0,
-      0,0,0,0,0,0,0,0,0,0,0,
-      0,0,0,0,0,0,0,0,0,0,0,
-      0,0,0,0,0,0,0,0,0,0,0,
-      0,0,0,0,0,0,0,0,0,0,0,
-      0,0,0,0,0,0,0,0,0,0,0,
-      0,0,0,0
+      0,0,0,0,0,0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0,0,0,0,0,0,
     };
 
     // set hours
@@ -150,7 +163,7 @@ class WordClockUsermod : public Usermod
           enabledWords[WORD_DREI_2ND] = true;
           break;
         case 4:
-          enabledWords[WORD_VIER] = true;
+          enabledWords[WORD_VIER_2ND] = true;
           break;
         case 5:
           enabledWords[WORD_FUENF_2ND] = true;
@@ -396,17 +409,44 @@ class WordClockUsermod : public Usermod
      *    Instead, use a timer check as shown here.
      */
     void loop() {
-      // do it every 5 seconds
-      if ((millis() - lastTime) > 5000)
+      unsigned long cycleTime;
+      const unsigned long now = millis();
+
+      if (configTestMode)
+      {
+        cycleTime = 500;
+      }
+      else
+      {
+        cycleTime = 5000;
+      }
+
+      // do it every cycle
+      if ((now - lastTime) > cycleTime)
       {
         // check the time
-        int minutes = minute(localTime);
+        static int hours;
+        static int minutes;
+
+        if (configTestMode) {
+          minutes++;
+          if (minutes >= 60)
+          {
+            hours++;
+            hours %= 24;
+            minutes = 0;
+          }
+        }
+        else {
+          hours = hour(localTime);
+          minutes = minute(localTime);
+        }
 
         // check if we already updated this minute
         if (lastTimeMinutes != minutes)
         {
           // update the display with new time
-          updateDisplay(hour(localTime), minute(localTime));
+          updateDisplay(hours, minutes);
 
           memset(maskLedsOn, 0, sizeof(maskLedsOn));
 
@@ -434,7 +474,7 @@ class WordClockUsermod : public Usermod
         }
 
         // remember last update
-        lastTime = millis();
+        lastTime = now;
       }
     }
 
@@ -547,7 +587,7 @@ class WordClockUsermod : public Usermod
 
       bool configComplete = !top.isNull();
 
-      //configComplete &= getJsonValue(top[F("active")], usermodActive);
+      configComplete &= getJsonValue(top[F("active")], usermodActive);
       configComplete &= getJsonValue(top[F("ledOffset")], ledOffset);
       configComplete &= getJsonValue(top[F("itIs")], configItIs);
       configComplete &= getJsonValue(top[F("midnight")], configMidnight);
