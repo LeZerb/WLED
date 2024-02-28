@@ -1,0 +1,148 @@
+{
+    "0xFF48B7": {
+        "label": "Power",
+        "cmd": "T=2"
+    },
+    "0xFF8A75": {
+        "label": "Repeat"
+    },
+    "0xFFCA35": {
+        "label": "A-B"
+    },
+    "0xFF6897": {
+        "label": "Open/close"
+    },
+    "0xFF827D": {
+        "label": "1"
+    },
+    "0xFFB24D": {
+        "label": "2"
+    },
+    "0xFFA25D": {
+        "label": "3"
+    },
+    "0xFF42BD": {
+        "label": "4"
+    },
+    "0xFF728D": {
+        "label": "5"
+    },
+    "0xFF629D": {
+        "label": "6"
+    },
+    "0xFFC23D": {
+        "label": "7"
+    },
+    "0xFFF20D": {
+        "label": "8"
+    },
+    "0xFFE21D": {
+        "label": "9"
+    },
+    "0xFF00FF": {
+        "label": "0"
+    },
+    "0xFF10EF": {
+        "label": "10+"
+    },
+    "0xFF18E7": {
+        "label": "time"
+    },
+    "0xFF926D": {
+        "label": "N/P"
+    },
+    "0xFF52AD": {
+        "label": "SUB/MP3"
+    },
+    "0xFFD22D": {
+        "label": "Angle"
+    },
+    "0xFF08F7": {
+        "label": "Language"
+    },
+    "0xFFD02F": {
+        "label": "Setup"
+    },
+    "0xFFD827": {
+        "label": "Title"
+    },
+    "0xFF7887": {
+        "label": "PBC"
+    },
+    "0xFFF807": {
+        "label": "Menu"
+    },
+    "0xFF807F": {
+        "label": "Up",
+        "cmd": "!incBrightness"
+    },
+    "0xFF906F": {
+        "label": "Down",
+        "cmd": "!decBrightness"
+    },
+    "0xFF9867": {
+        "label": "Left",
+        "cmd": "FX=~-1"
+    },
+    "0xFF8877": {
+        "label": "Right",
+        "cmd": "FX=~1"
+    },
+    "0xFF02FD": {
+        "label": "Enter"
+    },
+    "0xFF609F": {
+        "label": "Vol-"
+    },
+    "0xFF30CF": {
+        "label": "Vol+"
+    },
+    "0xFF12ED": {
+        "label": "Zoom"
+    },
+    "0xFFB04F": {
+        "label": "Return"
+    },
+    "0xFFB847": {
+        "label": "USB/Card"
+    },
+    "0xFFA857": {
+        "label": "Step"
+    },
+    "0xFF58A7": {
+        "label": "Slow"
+    },
+    "0xFFC837": {
+        "label": "Program"
+    },
+    "0xFFC03F": {
+        "label": "Clear"
+    },
+    "0xFF40BF": {
+        "label": "Mute"
+    },
+    "0xFF50AF": {
+        "label": "Display"
+    },
+    "0xFF38C7": {
+        "label": "Prev"
+    },
+    "0xFF28D7": {
+        "label": "Next"
+    },
+    "0xFFF00F": {
+        "label": "Rev"
+    },
+    "0xFF708F": {
+        "label": "Fwd"
+    },
+    "0xFF20DF": {
+        "label": "Vmode"
+    },
+    "0xFFE01F": {
+        "label": "Stop"
+    },
+    "0xFFE817": {
+        "label": "Play/Pause"
+    }
+}
