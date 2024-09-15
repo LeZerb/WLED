@@ -237,7 +237,7 @@ class WordClockUsermod : public Usermod
       {
         enabledWords[WORD_MITTERNACHT] = true;
       }
-      else if (configNull && (hour == 0) && (minutes < 25))
+      else if (configNull && (hour24 == 0) && (minutes < 25))
       {
         enabledWords[WORD_NULL] = true;
         enabledWords[WORD_UHR_1ST] = true;
