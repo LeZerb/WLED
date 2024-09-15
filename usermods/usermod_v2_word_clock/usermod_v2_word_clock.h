@@ -22,14 +22,14 @@ class WordClockUsermod : public Usermod
 
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
     bool usermodActive = true;
-
     bool configInverted  = false;
+
+    bool configTestMode  = false;
     bool configItIs      = true;
     bool configMidnight  = true;
     bool configNull      = true;
     bool configQuarterTo = true;
     bool configTwentyTo  = true;
-    bool configTestMode  = false;
 
     // defines for mask sizes
     #define maskSizeLeds        (13 * 11)
@@ -544,12 +544,14 @@ class WordClockUsermod : public Usermod
     {
       JsonObject top = root.createNestedObject(F("WordClockUsermod"));
       top[F("active")] = usermodActive;
+      top[F("inverted")] = configInverted;
+
+      top[F("testMode")] = configTestMode;
       top[F("itIs")] = configItIs;
       top[F("midnight")] = configMidnight;
       top[F("null")] = configNull;
       top[F("quarterTo")] = configQuarterTo;
       top[F("twentyTo")] = configTwentyTo;
-      top[F("testMode")] = configTestMode;
     }
 
     void appendConfigData()
@@ -587,12 +589,13 @@ class WordClockUsermod : public Usermod
 
       configComplete &= getJsonValue(top[F("active")], usermodActive);
       configComplete &= getJsonValue(top[F("inverted")], configInverted);
+
+      configComplete &= getJsonValue(top[F("testMode")], configTestMode);
       configComplete &= getJsonValue(top[F("itIs")], configItIs);
       configComplete &= getJsonValue(top[F("midnight")], configMidnight);
       configComplete &= getJsonValue(top[F("null")], configNull);
       configComplete &= getJsonValue(top[F("quarterTo")], configQuarterTo);
       configComplete &= getJsonValue(top[F("twentyTo")], configTwentyTo);
-      configComplete &= getJsonValue(top[F("testMode")], configTestMode);
 
       return configComplete;
     }
