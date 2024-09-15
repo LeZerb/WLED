@@ -22,8 +22,8 @@ class WordClockUsermod : public Usermod
 
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
     bool usermodActive = true;
-    int ledOffset      = 0;
 
+    bool configInverted  = false;
     bool configItIs      = true;
     bool configMidnight  = true;
     bool configNull      = true;
@@ -113,7 +113,7 @@ class WordClockUsermod : public Usermod
       // row 9 ->
       {105, 108}, // WORD_VIER_2ND
       {109, 114}, // WORD_SIEBEN
-      // row 10 ->
+      // row 10 <-
       {118, 120}, // WORD_ELF
       {120, 123}, // WORD_FUENF_2ND
       {124, 128}, // WORD_ZWOELF
@@ -544,7 +544,6 @@ class WordClockUsermod : public Usermod
     {
       JsonObject top = root.createNestedObject(F("WordClockUsermod"));
       top[F("active")] = usermodActive;
-      top[F("ledOffset")] = ledOffset;
       top[F("itIs")] = configItIs;
       top[F("midnight")] = configMidnight;
       top[F("null")] = configNull;
@@ -555,12 +554,11 @@ class WordClockUsermod : public Usermod
 
     void appendConfigData()
     {
-      oappend(SET_F("addInfo('WordClockUsermod:ledOffset', 1, 'Number of LEDs before the letters');"));
-      oappend(SET_F("addInfo('WordClockUsermod:itIs', 1, '\"It is\" activated');"));
-      oappend(SET_F("addInfo('WordClockUsermod:midnight', 1, 'Midnight instead of 12');"));
-      oappend(SET_F("addInfo('WordClockUsermod:null', 1, 'Null instead of 12');"));
-      oappend(SET_F("addInfo('WordClockUsermod:quarterTo', 1, 'Quarter to instead of \"Dreiviertel\"');"));
-      oappend(SET_F("addInfo('WordClockUsermod:twentyTo', 1, '\"Twenty to\" instead of \"10 nach halb\"');"));
+      oappend(SET_F("addInfo('WordClockUsermod:itIs', 1, '\"Es ist\" activated');"));
+      oappend(SET_F("addInfo('WordClockUsermod:midnight', 1, \"Mitternacht\" instead of \"12\");"));
+      oappend(SET_F("addInfo('WordClockUsermod:null', 1, \"Null\" instead of \"12\" at the start of a day);"));
+      oappend(SET_F("addInfo('WordClockUsermod:quarterTo', 1, \"Viertel vor\" instead of \"Dreiviertel\"');"));
+      oappend(SET_F("addInfo('WordClockUsermod:twentyTo', 1, '\"Zwanzig vor\" instead of \"10 nach halb\"');"));
     }
 
     /*
@@ -588,7 +586,7 @@ class WordClockUsermod : public Usermod
       bool configComplete = !top.isNull();
 
       configComplete &= getJsonValue(top[F("active")], usermodActive);
-      configComplete &= getJsonValue(top[F("ledOffset")], ledOffset);
+      configComplete &= getJsonValue(top[F("inverted")], configInverted);
       configComplete &= getJsonValue(top[F("itIs")], configItIs);
       configComplete &= getJsonValue(top[F("midnight")], configMidnight);
       configComplete &= getJsonValue(top[F("null")], configNull);
@@ -609,14 +607,29 @@ class WordClockUsermod : public Usermod
       // check if usermod is active
       if (usermodActive == true)
       {
-        // loop over all leds
-        for (int x = 0; x < maskSizeLeds; x++)
+        if (configInverted)
         {
-          // check mask
-          if (!maskLedsOn[x])
+          // loop over all leds
+          for (int x = 0; x < maskSizeLeds; x++)
           {
-            // set pixel off
-            strip.setPixelColor(x + ledOffset, RGBW32(0,0,0,0));
+            // check mask
+            if (maskLedsOn[x])
+            {
+              // set pixel off
+              strip.setPixelColor(x, RGBW32(0,0,0,0));
+            }
+          }
+        }
+        else // !configInverted
+        {
+          // loop over all leds
+          for (int x = 0; x < maskSizeLeds; x++)
+          {
+            if (!maskLedsOn[x])
+            {
+              // set pixel off
+              strip.setPixelColor(x, RGBW32(0,0,0,0));
+            }
           }
         }
       }
